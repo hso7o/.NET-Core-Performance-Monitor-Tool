@@ -1,0 +1,398 @@
+﻿@page
+@model WebApplication.Pages.Metrics.CPU_MemoryModel
+@using DataTransfer;
+@{
+    ViewData["Title"] = "CPU_Memory";
+}
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    @*<script src="https://cdn.plot.ly/plotly-1.2.0.min.js"></script>*@
+    @*<script src="https://cdn.plot.ly/plotly-2.9.0.min.js"></script>*@
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+</head>
+
+<div class="main">
+    <font size="50">CPU and Memory Usage</font>
+
+    <div id="cpu"></div>
+    <script>
+        var startCPU = `@Html.Encode(Common.CommonMethods.convertDateTime(Model.oldStamp))`;
+        var endCPU = `@Html.Encode(Common.CommonMethods.convertDateTime(Model.newStamp))`;
+        const idCPU = `@Html.Encode(IndexModel.userSession.Id)`;
+        var relevantCPUTimeStamps = [];
+
+        function getCPUData(start, end) {
+            const url = `@Html.Raw(Model.ApiUrl)`+`api/v1/CPU/Daterange?start=${start}&end=${end}&id=${idCPU}`;
+            return fetch(url, {
+                method: 'GET',
+                mode: 'cors',
+                headers: {
+                    "Accept": "application/json",
+                    'Access-Control-Allow-Origin': '*',
+                    "Content-type": "application/json"
+                }
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response;
+                    } else {
+                        return Promise.reject(response);
+                        throw Error(response.statusText);
+                    }
+                })
+                .then(response => response.json())
+                .then(function (data) {
+                    var dataArray = JSON.parse(data);
+                    var cpuUsage = new Array();
+                    var cpuTime = new Array();
+
+                    for (var i = 0; i < dataArray.length; i++) {
+                        cpuUsage[i] = dataArray[i].usage;
+                        cpuTime[i] = new Date(dataArray[i].timestamp);
+                    }
+
+                    var dataReturn = new Array();
+                    dataReturn[0] = cpuUsage;
+                    dataReturn[1] = cpuTime;
+
+                    return dataReturn;
+                });
+        }
+
+        Promise.all([getCPUData(startCPU, endCPU)])
+            // Plotting initial graph
+            .then(function (value) {
+                relevantCPUTimeStamps = value[0][1];
+
+                if (relevantCPUTimeStamps.length > @Model.pointsOnGraph) {
+                    relevantCPUTimeStamps =
+                        relevantCPUTimeStamps.slice(relevantCPUTimeStamps.length - @Model.pointsOnGraph, relevantCPUTimeStamps.length);
+                }
+
+                var CPU = [{
+                    x: value[0][1],
+                    y: value[0][0],
+                    type: 'scatter'
+                }];
+
+                var layout = {
+                    title: 'CPU Usage Over Time',
+                    yaxis: {
+                        title: 'Percentage of CPU Usage',
+                        titlefont: {
+                            family: 'Arial, sans-serif',
+                            size: 18,
+                            color: 'lightgrey'
+                        },
+                        range: [0, 100]
+                    },
+                    xaxis: {
+                        title: 'Time',
+                        titlefont: {
+                            family: 'Arial, sans-serif',
+                            size: 18,
+                            color: 'lightgrey'
+                        }
+                    }
+                };
+
+                var startTime = relevantCPUTimeStamps[0].setMinutes(relevantCPUTimeStamps[0].getMinutes());
+                var endTime = relevantCPUTimeStamps[relevantCPUTimeStamps.length - 1]
+                    .setMinutes(relevantCPUTimeStamps[relevantCPUTimeStamps.length - 1].getMinutes());
+
+                var relevantPoints = {
+                    xaxis: {
+                        type: 'date',
+                        range: [startTime, endTime]
+                    }
+                };
+
+                Plotly.plot('cpu', CPU, layout);
+                Plotly.relayout('cpu', relevantPoints);
+                return;
+            })
+            .then(setInterval(function () {
+                // Updating time stamps
+                startCPU = endCPU;
+                var now = new Date(); // Gets current time
+
+                endCPU = now.getFullYear() + "-" +
+                    ("0" + (now.getMonth() + 1)).slice(-2) + "-" +
+                    ("0" + now.getDate()).slice(-2) + "T" +
+                    ("0" + now.getHours()).slice(-2) + "%3A" +
+                    ("0" + now.getMinutes()).slice(-2) + "%3A" +
+                    ("0" + now.getSeconds()).slice(-2) + "." +
+                    ("0" + now.getMilliseconds()).slice(-3);
+
+                Promise.all([getCPUData(startCPU, endCPU)])
+                    .then(function (value) {
+                        relevantCPUTimeStamps.push.apply(relevantCPUTimeStamps, value[0][1]);
+
+                        if (relevantCPUTimeStamps.length > @Model.pointsOnGraph) {
+                            relevantCPUTimeStamps = relevantCPUTimeStamps
+                                .slice(relevantCPUTimeStamps.length - @Model.pointsOnGraph, relevantCPUTimeStamps.length);
+                        }
+
+                        var xaxis = value[0][1];
+                        var yaxis = value[0][0];
+
+                        var update = {
+                            x: [xaxis],
+                            y: [yaxis]
+                        }
+
+                        var startTime = relevantCPUTimeStamps[0].setMinutes(relevantCPUTimeStamps[0].getMinutes());
+                        var endTime = relevantCPUTimeStamps[relevantCPUTimeStamps.length - 1]
+                            .setMinutes(relevantCPUTimeStamps[relevantCPUTimeStamps.length - 1].getMinutes());
+
+                        var relevantPoints = {
+                            xaxis: {
+                                type: 'date',
+                                range: [startTime, endTime]
+                            }
+                        };
+
+                        Plotly.extendTraces('cpu', update, [0]);
+                        Plotly.relayout('cpu', relevantPoints);
+
+                        // Used to show last 15 minutes 
+                        @*if (xaxis.length != 0) {
+                            var currTime = new Date();
+                            var latestTime = new Date(`@Model.cpu[0].timestamp`);
+
+                            var oldTime;
+                            var futureTime;
+                            if (latestTime > currTime.setMinutes(currTime.getMinutes() - 15)) {
+                                oldTime = latestTime.setMinutes(latestTime.getMinutes());
+                                futureTime = currTime.setMinutes(currTime.getMinutes() + 15);
+                            } else {
+                                oldTime = currTime.setMinutes(currTime.getMinutes() - 15);
+                                futureTime = currTime.setMinutes(currTime.getMinutes() + 15);
+                            }
+
+                            var minuteView = {
+                                xaxis: {
+                                    type: 'date',
+                                    range: [oldTime, futureTime]
+                                }
+                            };
+
+                            Plotly.relayout('cpu', minuteView);
+                        }*@
+                    });
+            }, @IndexModel.userSession.sendRate*1.1));
+    </script>
+
+    <div id="mem"></div>
+    <script>
+        var startMem = `@Html.Encode(Common.CommonMethods.convertDateTime(Model.oldStamp))`;
+        var endMem = `@Html.Encode(Common.CommonMethods.convertDateTime(Model.newStamp))`;
+        const idMem = `@Html.Encode(IndexModel.userSession.Id)`;
+        var relevantMemTimeStamps = [];
+
+        function getMemData(start, end) {
+            const url = `@Html.Raw(Model.ApiUrl)`+`api/v1/Memory/Daterange?start=${start}&end=${end}&id=${idMem}`;
+            return fetch(url, {
+                method: 'GET',
+                mode: 'cors',
+                headers: {
+                    "Accept": "application/json",
+                    'Access-Control-Allow-Origin': '*',
+                    "Content-type": "application/json"
+                }
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response;
+                    } else {
+                        return Promise.reject(response);
+                        throw Error(response.statusText);
+                    }
+                })
+                .then(response => response.json())
+                .then(function (data) {
+                    var dataArray = JSON.parse(data);
+                    var memUsage = new Array();
+                    var memTime = new Array();
+
+                    for (var i = 0; i < dataArray.length; i++) {
+                        memUsage[i] = dataArray[i].usage;
+                        memTime[i] = new Date(dataArray[i].timestamp);
+                    }
+
+                    var dataReturn = new Array();
+                    dataReturn[0] = memUsage;
+                    dataReturn[1] = memTime;
+                    return dataReturn;
+                });
+        }
+
+        Promise.all([getMemData(startMem, endMem)])
+            // Plotting initial graph
+            .then(function (value) {
+                relevantMemTimeStamps = value[0][1];
+
+                if (relevantMemTimeStamps.length > @Model.pointsOnGraph) {
+                    relevantMemTimeStamps =
+                        relevantMemTimeStamps.slice(relevantMemTimeStamps.length - @Model.pointsOnGraph, relevantMemTimeStamps.length);
+                }
+
+                var Mem = [{
+                    x: value[0][1],
+                    y: value[0][0],
+                    type: 'scatter'
+                }];
+
+                var layout = {
+                    title: 'Memory Usage Over Time',
+                    yaxis: {
+                        title: 'Memory Usage (MB)',
+                        titlefont: {
+                            family: 'Arial, sans-serif',
+                            size: 18,
+                            color: 'lightgrey'
+                        },
+                    },
+                    xaxis: {
+                        title: 'Time',
+                        titlefont: {
+                            family: 'Arial, sans-serif',
+                            size: 18,
+                            color: 'lightgrey'
+                        }
+                    }
+                };
+
+                var startTime = relevantMemTimeStamps[0].setMinutes(relevantMemTimeStamps[0].getMinutes());
+                var endTime = relevantMemTimeStamps[relevantMemTimeStamps.length - 1]
+                    .setMinutes(relevantMemTimeStamps[relevantMemTimeStamps.length - 1].getMinutes());
+
+                var relevantPoints = {
+                    xaxis: {
+                        type: 'date',
+                        range: [startTime, endTime]
+                    }
+                };
+
+                Plotly.plot('mem', Mem, layout);
+                Plotly.relayout('mem', relevantPoints);
+                return;
+            })
+            .then(setInterval(function () {
+                // Updating time stamps
+                startMem = endMem;
+                var now = new Date();
+                endMem = now.getFullYear() + "-" +
+                    ("0" + (now.getMonth() + 1)).slice(-2) + "-" +
+                    ("0" + now.getDate()).slice(-2) + "T" +
+                    ("0" + now.getHours()).slice(-2) + "%3A" +
+                    ("0" + now.getMinutes()).slice(-2) + "%3A" +
+                    ("0" + now.getSeconds()).slice(-2) + "." +
+                    ("0" + now.getMilliseconds()).slice(-3);
+
+                Promise.all([getMemData(startMem, endMem)])
+                    .then(function (value) {
+                        relevantMemTimeStamps.push.apply(relevantMemTimeStamps, value[0][1]);
+
+                        if (relevantMemTimeStamps.length > @Model.pointsOnGraph) {
+                            relevantMemTimeStamps = relevantMemTimeStamps
+                                .slice(relevantMemTimeStamps.length - @Model.pointsOnGraph, relevantMemTimeStamps.length);
+                        }
+
+                        var xaxis = value[0][1];
+                        var yaxis = value[0][0];
+
+                        var update = {
+                            x: [xaxis],
+                            y: [yaxis]
+                        }
+
+                        var startTime = relevantMemTimeStamps[0].setMinutes(relevantMemTimeStamps[0].getMinutes());
+                        var endTime = relevantMemTimeStamps[relevantMemTimeStamps.length - 1]
+                            .setMinutes(relevantMemTimeStamps[relevantMemTimeStamps.length - 1].getMinutes());
+
+                        var relevantPoints = {
+                            xaxis: {
+                                type: 'date',
+                                range: [startTime, endTime]
+                            }
+                        };
+
+                        Plotly.extendTraces('mem', update, [0]);
+                        Plotly.relayout('mem', relevantPoints);
+
+                        @*if (xaxis.length != 0) {
+                            var currTime = new Date();
+                            var latestTime = new Date(`@Model.cpu[0].timestamp`);
+
+                            var oldTime;
+                            var futureTime;
+                            if (latestTime > currTime.setMinutes(currTime.getMinutes() - 15)) {
+                                oldTime = latestTime.setMinutes(latestTime.getMinutes());
+                                futureTime = currTime.setMinutes(currTime.getMinutes() + 15);
+                            } else {
+                                oldTime = currTime.setMinutes(currTime.getMinutes() - 15);
+                                futureTime = currTime.setMinutes(currTime.getMinutes() + 15);
+                            }
+
+                            var minuteView = {
+                                xaxis: {
+                                    type: 'date',
+                                    range: [oldTime, futureTime]
+                                }
+                            };
+
+                            Plotly.relayout('mem', minuteView);
+                        }*@
+                    });
+            }, @IndexModel.userSession.sendRate*1.1));
+    </script>
+
+    <h5>Average CPU Usage: @Model.avgCPU.ToString("0.00")</h5>
+    <h5>Average Memory Usage: @((Model.avgMem / 1000000).ToString("0.00")) MB</h5>
+
+    <button class="btn btn-default" onClick="window.location.reload()">Refresh Data</button>
+
+    <h3>Table of CPU and Mem Usage</h3>
+    <table class="table table-hover table-bordered" id="cpuMemTable">
+        <thead>
+            <tr>
+                <th>CPU (Percentage)</th>
+                <th>Memory (MB)</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.dataByTimeSorted != null)
+            {           
+                @for (int i = Model.dataByTimeSorted.Count - 1; i >= 0 ; i--)
+                {
+                    KeyValuePair<DateTime, Tuple<CPU_Usage, Mem_Usage>> p = Model.dataByTimeSorted[i];
+                    <tr>
+                        @if (p.Value.Item1 != null)
+                        {
+                            <td>@p.Value.Item1.usage.ToString("0.0000")</td>
+                        }
+                        else
+                        {
+                            <td></td>
+                        }
+                        @if (p.Value.Item2 != null)
+                        {
+                            <td>@((p.Value.Item2.usage / 1000000.0).ToString("0.0000"))</td>
+                        }
+                        else
+                        {
+                            <td></td>
+                        }
+                        <td>@p.Key.ToLongTimeString() @p.Key.ToShortDateString()</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>

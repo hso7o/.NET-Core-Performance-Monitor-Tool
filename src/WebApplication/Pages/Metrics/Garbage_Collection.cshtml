@@ -1,0 +1,124 @@
+﻿@page
+@using WebApplication.ClientSideData;
+@model WebApplication.Pages.Metrics.Garbage_CollectionModel
+@{
+    ViewData["Title"] = "Garbage_Collection";
+}
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+
+<div class="main">
+    <font size="50">Garbage Collection</font>
+
+    <div id="garbageCollection"></div>
+    <script>
+        var end = `@Html.Encode(Common.CommonMethods.convertDateTime(Model.newStamp))`;
+        const id = `@Html.Encode(IndexModel.userSession.Id)`;
+
+        function getData(start, end) {
+            const url = `@Html.Raw(Model.ApiUrl)`+`api/v1/GC/Daterange?start=${start}&end=${end}&id=${id}`;
+            return fetch(url, {
+                method: 'GET',
+                mode: 'cors',
+                headers: {
+                    "Accept": "application/json",
+                    'Access-Control-Allow-Origin': '*',
+                    "Content-type": "application/json"
+                }
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response;
+                    } else {
+                        return Promise.reject(response);
+                        throw Error(response.statusText);
+                    }
+                })
+                .then(response => response.json())
+                .then(function (data) {
+                    var dataArray = JSON.parse(data);
+                    var gcType = new Array();
+                    var gcTimestamp = new Array();
+
+                    for (var i = 0; i < dataArray.length; i++) {
+                        gcType[i] = dataArray[i].method;
+                        gcTimestamp[i] = new Date(dataArray[i].timestamp);
+                    }
+
+                    var dataReturn = new Array();
+                    dataReturn[0] = gcType;
+                    dataReturn[1] = gcTimestamp;
+
+                    return dataReturn;
+                });
+        }
+
+        Promise.all([getData(end, end)])
+            .then(setInterval(function () {
+                // Updating time stamps
+                start = end;
+                var now = new Date(); // Gets current time
+
+                end = now.getFullYear() + "-" +
+                    ("0" + (now.getMonth() + 1)).slice(-2) + "-" +
+                    ("0" + now.getDate()).slice(-2) + "T" +
+                    ("0" + now.getHours()).slice(-2) + "%3A" +
+                    ("0" + now.getMinutes()).slice(-2) + "%3A" +
+                    ("0" + now.getSeconds()).slice(-2) + "." +
+                    ("0" + now.getMilliseconds()).slice(-3);
+
+                Promise.all([getData(start, end)])
+                    .then(function (values) {
+                        var types = values[0][0];
+                        var timestamps = values[0][1];
+
+                        if (timestamps.length != 0) {
+                            var table = document.getElementById("gcTable");
+
+                            for (var i = 0; i < timestamps.length; i++) {
+                                var row = table.insertRow(0);
+                                var cell1 = row.insertCell(0);
+                                var cell2 = row.insertCell(1);
+                                var time = timestamps[i];
+
+                                cell1.innerHTML = methods[i];
+                                cell2.innerHTML = time.getUTCHours() + `:` +
+                                    time.getUTCMinutes() + `:` +
+                                    time.getUTCSeconds() + ` ` +
+                                    time.getUTCMonth() + `/` +
+                                    time.getUTCDate() + `/` +
+                                    time.getUTCFullYear();
+                            }
+                        }
+                    });
+            }, @IndexModel.userSession.sendRate*1.1));
+    </script>
+
+    <h3>Table of Garbage Collection</h3>
+    <table class="table table-hover table-bordered" id="gcTable">
+        <thead>
+            <tr>
+                <th>GC Type</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.gc != null)
+            {
+                @for (int i = Model.gc.Count - 1; i >= 0; i--)
+                {
+                    DataTransfer.GC g = Model.gc.ElementAt<DataTransfer.GC>(i);
+                    <tr>
+                        <td>@g.type</td>
+                        <td>@g.timestamp.ToLongTimeString() @g.timestamp.ToShortDateString()</td>
+                    </tr>
+
+                }
+            }
+        </tbody>
+    </table>
+</div>

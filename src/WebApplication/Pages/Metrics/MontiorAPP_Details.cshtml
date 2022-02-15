@@ -1,0 +1,93 @@
+﻿@page
+@model WebApplication.Pages.Metrics.MontiorAPP_DetailsModel
+@{
+}
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Record App Details</title>
+</head>
+<body>
+    <div class="main">
+        <h1>Record App Details</h1>
+        <form method="post">
+            <div asp-validation-summary="All"></div>
+
+            <div>
+                <label asp-for="monitorModel.ProcessName"></label>&nbsp;&nbsp;&nbsp;<input asp-for="monitorModel.ProcessName" />
+                <div>
+                    <span asp-validation-for="monitorModel.ProcessName"></span>
+                </div>
+            </div>
+            <div>
+                <label asp-for="monitorModel.app"></label>&nbsp;&nbsp;&nbsp;<input asp-for="monitorModel.app" />
+                <div>
+                    <span asp-validation-for="monitorModel.app"></span>
+                </div>
+            </div>
+            <div>
+                <label asp-for="monitorModel.EnableCPU"></label>&nbsp;&nbsp;&nbsp;<input asp-for="monitorModel.EnableCPU" type="checkbox" value="true" />
+                <div>
+                    <span asp-validation-for="monitorModel.EnableCPU"></span>
+                </div>
+            </div>
+            <div>
+                <label asp-for="monitorModel.EnableMEM"></label>&nbsp;&nbsp;&nbsp;<input asp-for="monitorModel.EnableMEM" type="checkbox" value="true" />
+                <div>
+                    <span asp-validation-for="monitorModel.EnableMEM"></span>
+                </div>
+            </div>
+            <div>
+                <label asp-for="monitorModel.EnableContention"></label>&nbsp;&nbsp;&nbsp;<input asp-for="monitorModel.EnableContention" type="checkbox" />
+                <div>
+                    <span asp-validation-for="monitorModel.EnableContention"></span>
+                </div>
+            </div>
+            <div>
+                <label asp-for="monitorModel.EnableException"></label>&nbsp;&nbsp;&nbsp;<input asp-for="monitorModel.EnableException" type="checkbox" />
+                <div>
+                    <span asp-validation-for="monitorModel.EnableException"></span>
+                </div>
+            </div>
+            <div>
+                <label asp-for="monitorModel.EnableGC"></label>&nbsp;&nbsp;&nbsp;<input asp-for="monitorModel.EnableGC" type="checkbox" />
+                <div>
+                    <span asp-validation-for="monitorModel.EnableGC"></span>
+                </div>
+            </div>
+            <div>
+                <label asp-for="monitorModel.EnableHTTP"></label>&nbsp;&nbsp;&nbsp;&nbsp;<input asp-for="monitorModel.EnableHTTP" type="checkbox" />
+                <div>
+                    <span asp-validation-for="monitorModel.EnableHTTP"></span>
+                </div>
+            </div>
+            <div>
+                <label asp-for="monitorModel.EnableJIT"></label>&nbsp;&nbsp;&nbsp;<input asp-for="monitorModel.EnableJIT" type="checkbox" />
+                <div>
+                    <span asp-validation-for="monitorModel.EnableJIT"></span>
+                </div>
+            </div>
+            <div>
+                <label asp-for="monitorModel.url"></label>&nbsp;&nbsp;&nbsp;<input asp-for="monitorModel.url" />
+                <div>
+                    <span asp-validation-for="monitorModel.url"></span>
+                </div>
+            </div>
+            <div>
+                <label asp-for="monitorModel.sampleRate"></label>&nbsp;&nbsp;&nbsp;<input asp-for="monitorModel.sampleRate" value="1000" type="number" min="0" max="65536" />
+                <div>
+                    <span asp-validation-for="monitorModel.sampleRate"></span>
+                </div>
+            </div>
+            <div>
+                <label asp-for="monitorModel.sendRate"></label>&nbsp;&nbsp;&nbsp;<input asp-for="monitorModel.sendRate" value="5000" type="number" min="0" max="65536" />
+                <div>
+                    <span asp-validation-for="monitorModel.sendRate"></span>
+                </div>
+            </div>
+            <div>
+                <button type="submit" asp-page-handler="SaveApp">Save</button>
+            </div>
+        </form>
+    </div>
+</body>

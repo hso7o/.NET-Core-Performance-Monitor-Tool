@@ -1,0 +1,176 @@
+﻿@page
+@model WebApplication.Pages.Metrics.ExceptionsModel
+@using DataTransfer
+@{
+    ViewData["Title"] = "Exceptions";
+}
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+
+<div class="main">
+    <font size="50">Exceptions</font>
+
+    <div id="exception"></div>
+    <script>
+        var end = `@Html.Encode(Common.CommonMethods.convertDateTime(Model.newStamp))`;
+        const id = `@Html.Encode(IndexModel.userSession.Id)`;
+
+        function getData(start, end) {
+            const url = `@Html.Raw(Model.ApiUrl)`+`api/v1/Exception/Daterange?start=${start}&end=${end}&id=${id}`;
+            return fetch(url, {
+                method: 'GET',
+                mode: 'cors',
+                headers: {
+                    "Accept": "application/json",
+                    'Access-Control-Allow-Origin': '*',
+                    "Content-type": "application/json"
+                }
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response;
+                    } else {
+                        return Promise.reject(response);
+                        throw Error(response.statusText);
+                    }
+                })
+                .then(response => response.json())
+                .then(function (data) {
+                    var dataArray = JSON.parse(data);
+                    var exceptionType = new Array();
+                    var exceptionTimestamp = new Array();
+
+                    for (var i = 0; i < dataArray.length; i++) {
+                        exceptionType[i] = dataArray[i].type;
+                        exceptionTimestamp[i] = new Date(dataArray[i].timestamp);
+                    }
+
+                    var dataReturn = new Array();
+                    dataReturn[0] = exceptionType;
+                    dataReturn[1] = exceptionTimestamp;
+
+                    return dataReturn;
+                });
+        }
+
+        Promise.all([getData(end, end)])
+            .then(setInterval(function () {
+                // Updating time stamps
+                start = end;
+                var now = new Date(); // Gets current time
+
+                end = now.getFullYear() + "-" +
+                    ("0" + (now.getMonth() + 1)).slice(-2) + "-" +
+                    ("0" + now.getDate()).slice(-2) + "T" +
+                    ("0" + now.getHours()).slice(-2) + "%3A" +
+                    ("0" + now.getMinutes()).slice(-2) + "%3A" +
+                    ("0" + now.getSeconds()).slice(-2) + "." +
+                    ("0" + now.getMilliseconds()).slice(-3);
+
+                Promise.all([getData(start, end)])
+                    .then(function (values) {
+                        var types = values[0][0];
+                        var timestamps = values[0][1];
+
+                        if (types.length != 0) {
+                            var table = document.getElementById("exceptionTable");
+
+                            for (var i = 0; i < types.length; i++) {
+                                var row = table.insertRow(0);
+                                var cell1 = row.insertCell(0);
+                                var cell2 = row.insertCell(1);
+                                var time = timestamps[i];
+
+                                cell1.innerHTML = types[i];
+                                cell2.innerHTML = time.getUTCHours() + `:` +
+                                    time.getUTCMinutes() + `:` +
+                                    time.getUTCSeconds() + ` ` +
+                                    time.getUTCMonth() + `/` +
+                                    time.getUTCDate() + `/` +
+                                    time.getUTCFullYear();
+                            }
+                        }
+                    });
+            }, @IndexModel.userSession.sendRate*1.1));
+    </script>
+
+    @if (Model.exceptionSorted.Count >= 1)
+    {
+        <h4>Most common exception: @Model.exceptionSorted[0].Key</h4>
+    }
+
+    @*<form name="userExceptionInput" method="post">
+            <input type="text" placeholder="Number of Exceptions" name="userReqNum" /> <br />
+            <button class="btn btn-default">Examine</button>
+        </form>
+
+        <script>
+            var numExceptions = @Model.userReqNum
+            if (numExceptions <= @Model.exceptionSorted.Count) {
+                @message = `Currently showing top ` + numExceptions + ` exceptions.`;
+            } else {
+                @message = `Do not have ` + userReqNum + ` exceptions. Showing all exceptions seen so far.`;
+            }
+        </script>*@
+
+    <h3>Exceptions by Frequency</h3>
+    <h5>Showing the top 5 (or less exceptions)</h5>
+    <table class="table table-hover table-bordered" id="exceptionTable">
+        <thead>
+            <tr>
+                <th>Exception Type</th>
+                <th>Frequency</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.exceptions != null)
+            {
+                int numExceptions = 5;
+                if (Model.userReqNum != 0)
+                {
+                    numExceptions = Model.userReqNum;
+                }
+                @for (int i = 0; i < Math.Min(numExceptions, Model.exceptionTracker.Count); i++)
+                {
+                    KeyValuePair<string, int> e = Model.exceptionSorted[i];
+                    <tr>
+                        <td>@e.Key</td>
+                        <td>@e.Value</td>
+                    </tr>
+
+                }
+            }
+        </tbody>
+    </table>
+
+    <button class="btn btn-default" onClick="window.location.reload()">Refresh Frequency Data</button>
+
+    <h3>Table of Exceptions</h3>
+    <h5>Total number of exceptions: @Model.totalExceptions</h5>
+    <table class="table table-hover table-bordered">
+        <thead>
+            <tr>
+                <th>Exception Type</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.exceptions != null)
+            {
+                @for (int i = Model.exceptions.Count - 1; i >= 0; i--)
+                {
+                    Exceptions e = Model.exceptions[i];
+                    <tr>
+                        <td>@e.type</td>
+                        <td>@e.timestamp.ToLongTimeString() @e.timestamp.ToShortDateString()</td>
+                    </tr>
+
+                }
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>.NET Performance Monitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="~/css/sidebar.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Yantramanav" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+</head>
+<body>
+    <div id="sidebar-wrapper">
+        <ul class="sidebar-nav">
+            @if (IndexModel.userSession != null)
+            {
+                <li class="sidebar-brand"><a asp-page="/Index">.NET Performance Monitor</a></li>
+                <li><a asp-page="/Metrics/CPU_Memory">CPU and Memory Usage</a></li>
+                <li><a asp-page="/Metrics/HTTP_Requests">HTTP Requests</a></li>
+                <li><a asp-page="/Metrics/Exceptions">Exceptions</a></li>
+                <li><a asp-page="/Metrics/Contentions">Contentions</a></li>
+                <li><a asp-page="/Metrics/Garbage_Collection">Garbage Collection</a></li>
+                <li><a asp-page="/Metrics/JIT">JIT</a></li>
+                <li><font color="#CFCFCF">Currently viewing data for</font></li>
+                <li><font color="#CFCFCF">Application: @IndexModel.userSession.application</font></li>
+                <li><font color="#CFCFCF">Process: @IndexModel.userSession.process</font></li>
+            }
+            else
+            {
+                <li class="sidebar-brand"><a asp-page="/Index">.NET Performance Monitor</a></li>
+                <li><a asp-page="/Index">CPU and Memory Usage</a></li>
+                <li><a asp-page="/Index">HTTP Requests</a></li>
+                <li><a asp-page="/Index">Exceptions</a></li>
+                <li><a asp-page="/Index">Contentions</a></li>
+                <li><a asp-page="/Index">Garbage Collection</a></li>
+                <li><a asp-page="/Index">JIT</a></li>
+
+            }
+        </ul>
+    </div>
+
+    @RenderBody()
+    
+    @RenderSection("Scripts", required: false) 
+</body>
+</html>

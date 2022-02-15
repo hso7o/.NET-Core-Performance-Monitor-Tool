@@ -1,0 +1,68 @@
+﻿@page
+@using WebApplication.ClientSideData;
+@model WebApplication.Pages.Metrics.HTTP_RequestsModel
+@{
+    ViewData["Title"] = "HTTP_Requests";
+}
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+
+<div class="main">
+    <font size="50">HTTP Requests</font>
+
+    <h5>Total Http Requests: @Model.totalHttpRequest</h5>
+    @if (Model.totalHttpRequest != 0)
+    {
+        <h5>Average Duration of Http Requests: @((Model.avgDuration / 1000).ToString("0.0000")) seconds</h5>
+    }
+
+    <button class="btn btn-default" onClick="window.location.reload()">Refresh Data</button>
+
+    <h3>Table of Http Requests</h3>
+    <table class="table table-hover table-bordered">
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Start Timestamp</th>
+                <th>End TimeStamp</th>
+                <th>Duration (miliseconds)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.http != null)
+            {
+                @for (int i = Model.http.Count - 1; i >= 0; i--)
+                {
+                    Client_Http_Request h = Model.http.ElementAt<Client_Http_Request>(i);
+                    <tr>
+                        @if (h.EndTimestamp.Year != 1)
+                        {
+                            <td>@h.Method</td>
+                            <td>@h.Path</td>
+                            <td>@h.StartTimestamp.ToLongTimeString() @h.StartTimestamp.ToShortDateString()</td>
+                            <td>@h.EndTimestamp.ToLongTimeString() @h.EndTimestamp.ToShortDateString()</td>
+                            <td>@h.Duration</td>
+                        }
+                        else
+                        {
+                            <td>@h.Method</td>
+                            <td>@h.Path</td>
+                            <td>@h.StartTimestamp.ToLongTimeString() @h.StartTimestamp.ToShortDateString()</td>
+                            <td>Pending...</td>
+                            <td>Pending...</td>
+                        }
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>Unable to retrieve data</tr>
+            }
+        </tbody>
+    </table>
+</div>

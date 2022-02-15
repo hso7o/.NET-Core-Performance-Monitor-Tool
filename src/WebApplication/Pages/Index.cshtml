@@ -1,0 +1,59 @@
+﻿@page
+@model IndexModel
+@using DataTransfer;
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <meta charset="utf-8">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body onload="updateApp()">
+    <div class="main">
+        <font size="50" style="font-family:Open Sans">.NET Performance Monitor</font>
+        <br /><p>Check your app's performance by navigating the sidebar.</p>
+
+        <br />@Model.indexMessage
+    <form name="userSessionInput" method="post">
+        <select name="app" size="10" onChange="updatePro(this.selectedIndex)" style="width: 150px"></select>
+        <select name="pro" size="10" style="width: 150px"></select><br />
+        <button class="btn btn-default" asp-page-handler="Examine">Examine</button>
+        <button class="btn btn-default" asp-page-handler="Record">Record</button>
+        <button class="btn btn-default" asp-page-handler="Pause">Pause</button>
+        <button class="btn btn-default" asp-page-handler="Delete">Delete</button>
+    </form>
+
+        <script type="text/javascript">
+
+        var appList = document.userSessionInput.app
+        var proList = document.userSessionInput.pro
+
+        var pro = new Array()
+        var app = new Array()
+
+        var i = 0;
+        var collection = @Html.Raw(Json.Serialize(Model.sessionsByApp));
+        $.each(collection, function (key, value) {
+            app[i] = key;
+            pro[i] = value;
+            i++;
+        });
+
+        function updateApp() {
+            appList.options.length = 0
+            for (i = 0; i < app.length; i++)
+                appList.options[appList.options.length] = new Option(app[i], app[i])
+        }
+
+        function updatePro(selectedApp) {
+            proList.options.length = 0
+            for (i = 0; i < pro[selectedApp].length; i++)
+                proList.options[proList.options.length] = new Option(pro[selectedApp][i], pro[selectedApp][i])
+        }
+        </script>
+    </div>
+</body>

@@ -1,0 +1,64 @@
+﻿@page
+@using WebApplication.ClientSideData;
+@model WebApplication.Pages.Metrics.ContentionsModel
+@{
+    ViewData["Title"] = "Contentions";
+}
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+
+<div class="main">
+    <font size="50">Contentions</font>
+
+    <h5>Total Contentions: @Model.totalContentions</h5>
+    @if (Model.totalContentions != 0)
+    {
+        <h5>Average Duration of Contentions: @Model.avgDuration</h5>
+    }
+
+    <button class="btn btn-default" onClick="window.location.reload()">Refresh Data</button>
+
+    <h3>Table of Contentions</h3>
+    <table class="table table-hover table-bordered">
+        <thead>
+            <tr>
+                <th>Start Timestamp</th>
+                <th>End Timestamp</th>
+                <th>Duration</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.contentions != null)
+            {
+                @for (int i = Model.contentions.Count - 1; i >= 0; i--)
+                {
+                    Client_Contention c = Model.contentions.ElementAt<Client_Contention>(i);
+                    <tr>
+
+                        @if (c.EndTimestamp != null)
+                        {
+                            <td>@c.StartTimestamp.ToLongTimeString() @c.StartTimestamp.ToShortDateString()</td>
+                            <td>@c.EndTimestamp.ToLongTimeString() @c.EndTimestamp.ToShortDateString()</td>
+                            <td>@c.Duration</td>
+                        }
+                        else
+                        {
+                            <td>@c.StartTimestamp.ToLongTimeString() @c.StartTimestamp.ToShortDateString()</td>
+                            <td>Pending...</td>
+                            <td>Pending...</td>
+                        }
+                    </tr>
+
+                }
+            }
+            else
+            {
+                <tr>Unable to retrieve data</tr>
+            }
+        </tbody>
+    </table>
+</div>
